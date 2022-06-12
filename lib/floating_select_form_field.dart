@@ -1,13 +1,16 @@
+library carvaldo_form;
+
 import 'package:flutter/material.dart';
 
 class FloatingSelectFormField extends StatefulWidget {
-  final List<FloatingSelectStateOption> children;
+  final List<FloatingSelectOption> children;
   final String? label;
   final List<Widget>? actions;
   final EdgeInsetsGeometry buttonPadding;
   final EdgeInsetsGeometry contentPadding;
   final InputBorder? border; /// TODO: Criar atributo "decoration".
-  final void Function(int index, FloatingSelectStateOption widget)? onSelected;
+  final void Function(int index, FloatingSelectOption widget)? onSelected;
+  final int? selectedPosition;
 
   const FloatingSelectFormField({
     Key? key,
@@ -17,6 +20,7 @@ class FloatingSelectFormField extends StatefulWidget {
     this.buttonPadding = const EdgeInsets.all(0),
     this.onSelected,
     this.border,
+    this.selectedPosition,
     required this.children
   }) : super(key: key);
 
@@ -25,7 +29,7 @@ class FloatingSelectFormField extends StatefulWidget {
 }
 
 class FloatingSelectState extends State<FloatingSelectFormField> {
-  String? _selectedText;
+  FloatingSelectOption? _selected;
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +37,10 @@ class FloatingSelectState extends State<FloatingSelectFormField> {
       children: [
         Flexible(
             child: TextFormField(
-              onTap: () => _showOptions(context),
-              controller: TextEditingController(text: _selectedText),
+              onTap: _showOptions,
+              controller: TextEditingController(
+                  text: _selected?.text
+              ),
               readOnly: true,
               decoration: InputDecoration(
                 border: widget.border,
@@ -52,7 +58,15 @@ class FloatingSelectState extends State<FloatingSelectFormField> {
     );
   }
 
-  _showOptions(BuildContext context) {
+  @override
+  void initState() {
+    super.initState();
+    if(widget.selectedPosition != null) {
+      _selected = widget.children[widget.selectedPosition!];
+    }
+  }
+
+  _showOptions() {
     showDialog(
       context: context,
       barrierDismissible: true, // user must tap button!
@@ -65,7 +79,7 @@ class FloatingSelectState extends State<FloatingSelectFormField> {
               itemCount: widget.children.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
-                    onTap: () => _onSelected(context, index),
+                    onTap: () => _onSelected(index),
                     child: widget.children[index]
                 );
               },
@@ -79,23 +93,23 @@ class FloatingSelectState extends State<FloatingSelectFormField> {
     );
   }
 
-  _onSelected(BuildContext context, int index) {
-      setState((){
-        if(widget.onSelected != null) {
-          widget.onSelected!(index, widget.children[index]);
-        }
-        _selectedText = widget.children[index].text;
-      });
+  _onSelected(int index) {
+    setState((){
+      if(widget.onSelected != null) {
+        widget.onSelected!(index, widget.children[index]);
+      }
+      _selected = widget.children[index];
+    });
     Navigator.of(context).pop();
   }
 }
 
-class FloatingSelectStateOption extends StatelessWidget {
+class FloatingSelectOption extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final String text; // TODO: Renomear para value
 
-  const FloatingSelectStateOption({
+  const FloatingSelectOption({
     Key? key,
     this.padding = const EdgeInsets.only(left: 0, top: 8, right: 0, bottom: 8),
     required this.text,
