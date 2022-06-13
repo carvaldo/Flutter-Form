@@ -3,82 +3,60 @@ library carvaldo_form;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class DateFormField extends StatefulWidget {
-  const DateFormField({
+class DateFormField extends FormField<DateTime> {
+  DateFormField({
     Key? key,
     required this.label,
     this.format = "MM/dd/yyyy",
     this.onPicked,
-    this.initialDate,
     this.firstDate,
     this.lastDate,
-    this.locale,
     this.textAlign = TextAlign.start,
-    this.inputBorder,
-    this.validator
-  }) : super(key: key);
+    this.border,
+    this.controller,
+    FormFieldValidator<DateTime?>? validator
+  }) : super(
+      key: key,
+      onSaved: onPicked,
+      validator: validator,
+      // autovalidateMode: AutovalidateMode.disabled,
+      builder: (state) {
+        var value = controller?.value == null ? "" : DateFormat(format).format(controller!.value!);
+        return TextFormField(
+            textAlign: textAlign,
+            readOnly: true,
+            decoration: InputDecoration(
+                label: Text(label),
+                border: border
+            ),
+            controller: TextEditingController(text: value),
+            onTap: () async {
+              var date = await showDatePicker(
+                context: state.context,
+                initialDate: controller?.value ?? DateTime.now(),
+                firstDate: firstDate ?? DateTime.fromMillisecondsSinceEpoch(0),
+                lastDate: lastDate ?? DateTime.now(),
+              );
+              controller?.value = date;
+              // state.didChange(date);
+              if(onPicked != null) {
+                onPicked(date);
+              }
+            }
+        );
+      }
+  );
 
   final String format;
   final String label;
-  final void Function(DateTime? date)? onPicked;
-  final DateTime? initialDate;
+  final FormFieldSetter<DateTime?>? onPicked;
   final DateTime? firstDate;
   final DateTime? lastDate;
-  final Locale? locale;
   final TextAlign textAlign;
-  final InputBorder? inputBorder;
-  final String? Function(DateTime? value)? validator;
-
-  @override
-  State<StatefulWidget> createState() => _DateFormFieldState();
+  final InputBorder? border;
+  final DatePickingController? controller;
 }
 
-class _DateFormFieldState extends State<DateFormField> {
-  late DateFormat _formatter;
-  String? _text;
-  DateTime? _date;
-
-  @override
-  Widget build(BuildContext context) => TextFormField(
-    textAlign: widget.textAlign,
-    readOnly: true,
-    decoration: InputDecoration(
-        label: Text(widget.label),
-        border: widget.inputBorder
-    ),
-    controller: TextEditingController(
-        text: _text
-    ),
-    onTap: _selectDate,
-    validator: (text) {
-      if(widget.validator != null) {
-        return widget.validator!(_date);
-      }
-      return null;
-    },
-  );
-
-
-  @override
-  void initState() {
-    super.initState();
-    _formatter = DateFormat(widget.format);
-  }
-
-  _selectDate() async {
-    var date = await showDatePicker(
-        context: context,
-        initialDate: widget.initialDate ?? DateTime.now(),
-        firstDate: widget.firstDate ?? DateTime.fromMillisecondsSinceEpoch(0),
-        lastDate: widget.lastDate ?? DateTime.now(),
-        locale: widget.locale ?? const Locale("en", "US")
-    );
-    setState(() {
-      _text = (date != null) ? _formatter.format(date) : null;
-      _date = date;
-      if(widget.onPicked != null) {
-        widget.onPicked!(date);
-      }
-    });
-  }
+class DatePickingController extends ValueNotifier<DateTime?> {
+  DatePickingController({DateTime? date}) : super(date);
 }
