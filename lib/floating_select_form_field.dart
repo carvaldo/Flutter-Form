@@ -2,118 +2,96 @@ library carvaldo_form;
 
 import 'package:flutter/material.dart';
 
-class FloatingSelectFormField extends StatefulWidget {
-  final List<FloatingSelectOption> children;
+// TODO: Fazer assertion para validar se children é do tipo SelectOption.
+class SelectFormField extends FormField<int> {
+  final List<SelectOption> children;
   final String? label;
   final List<Widget>? actions;
   final EdgeInsetsGeometry buttonPadding;
   final EdgeInsetsGeometry contentPadding;
   final InputBorder? border; /// TODO: Criar atributo "decoration".
-  final void Function(int index, FloatingSelectOption widget)? onSelected;
-  final int? selectedPosition;
+  final void Function(int index, SelectOption widget)? onSelected;
+  final SelectController? controller;
 
-  const FloatingSelectFormField({
+  SelectFormField({
     Key? key,
+    required this.children,
+    this.controller,
     this.label,
     this.actions,
     this.contentPadding = const EdgeInsets.all(16),
     this.buttonPadding = const EdgeInsets.all(0),
     this.onSelected,
     this.border,
-    this.selectedPosition,
-    required this.children
-  }) : super(key: key);
-
-  @override
-  State<StatefulWidget> createState() => FloatingSelectState();
-}
-
-class FloatingSelectState extends State<FloatingSelectFormField> {
-  FloatingSelectOption? _selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Flexible(
-            child: TextFormField(
-              onTap: _showOptions,
-              controller: TextEditingController(
-                  text: _selected?.text
-              ),
-              readOnly: true,
-              decoration: InputDecoration(
-                border: widget.border,
-                labelText: widget.label,
-              ),
-            )
-        ),
-        Container(
-          margin: const EdgeInsets.only(
-              left: 8, top: 0, right: 0, bottom: 0
-          ),
-          child: const Icon(Icons.arrow_drop_down),
-        ),
-      ],
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    if(widget.selectedPosition != null) {
-      _selected = widget.children[widget.selectedPosition!];
-    }
-  }
-
-  _showOptions() {
-    showDialog(
-      context: context,
-      barrierDismissible: true, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: SizedBox(
-            width: double.minPositive,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: widget.children.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                    onTap: () => _onSelected(index),
-                    child: widget.children[index]
-                );
-              },
+  }) : super(key: key,
+      builder: (state) {
+        return Row(
+          children: [
+            Flexible(
+                child: TextFormField(
+                  onTap: () async {
+                    showDialog(
+                      context: state.context,
+                      barrierDismissible: true, // user must tap button!
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          content: SizedBox(
+                            width: double.minPositive,
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: children.length,
+                              itemBuilder: (context, index) {
+                                return GestureDetector(
+                                    onTap: () {
+                                      if(onSelected != null) {
+                                        onSelected(index, children[index]);
+                                      }
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: children[index]
+                                );
+                              },
+                            ),
+                          ),
+                          actions: actions,
+                          contentPadding: contentPadding,
+                          buttonPadding: buttonPadding,
+                        );
+                      },
+                    );
+                  },
+                  controller: TextEditingController(
+                      text: (controller?.value != null) ? children[controller!.value!].label : null
+                  ),
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    border: border,
+                    labelText: label,
+                  ),
+                )
             ),
-          ),
-          actions: widget.actions,
-          contentPadding: widget.contentPadding,
-          buttonPadding: widget.buttonPadding,
+            Container(
+              margin: const EdgeInsets.only(
+                  left: 8, top: 0, right: 0, bottom: 0
+              ),
+              child: const Icon(Icons.arrow_drop_down),
+            ),
+          ],
         );
-      },
-    );
-  }
-
-  _onSelected(int index) {
-    setState((){
-      if(widget.onSelected != null) {
-        widget.onSelected!(index, widget.children[index]);
       }
-      _selected = widget.children[index];
-    });
-    Navigator.of(context).pop();
-  }
+  );
 }
 
-class FloatingSelectOption extends StatelessWidget {
+class SelectOption extends StatelessWidget {
   final Widget child;
+  final String label;
   final EdgeInsetsGeometry padding;
-  final String text; // TODO: Renomear para value
 
-  const FloatingSelectOption({
+  const SelectOption({
     Key? key,
+    required this.label,
+    required this.child,
     this.padding = const EdgeInsets.only(left: 0, top: 8, right: 0, bottom: 8),
-    required this.text,
-    required this.child
   }) : super(key: key);
 
   @override
@@ -121,4 +99,8 @@ class FloatingSelectOption extends StatelessWidget {
     padding: padding,
     child: child,
   );
+}
+
+class SelectController extends ValueNotifier<int?> {
+  SelectController(int? value) : super(value);
 }
