@@ -16,7 +16,7 @@ and the Flutter guide for
 - [x] Date Picker Field;
 - [x] Select Field;
 - [ ] File Field;
-- [ ] Mask Field. 
+- [x] Mask Field. 
 
 <!-- ## Getting started
 
